@@ -6,12 +6,26 @@ trait Functions:
   def sum(a: List[Double]): Double
   def concat(a: Seq[String]): String
   def max(a: List[Int]): Int // gives Int.MinValue if a is empty
+  def combine[A](a: Iterable[A])(using combiner: Combiner[A]): A
 
 object FunctionsImpl extends Functions:
-  override def sum(a: List[Double]): Double = ???
-  override def concat(a: Seq[String]): String = ???
-  override def max(a: List[Int]): Int = ???
 
+  given combinerSum: Combiner[Double] with
+    def unit = 0.0
+    def combine(a: Double, b: Double): Double = a + b
+
+  given combinerConcat: Combiner[String] with
+    def unit = ""
+    def combine(a: String, b: String): String = a.concat(b)
+
+  given combinerMax: Combiner[Int] with
+    def unit = Int.MinValue
+    def combine(a: Int, b: Int): Int = math.max(a, b)
+
+  override def sum(a: List[Double]): Double = combine(a)
+  override def concat(a: Seq[String]): String = combine(a)
+  override def max(a: List[Int]): Int = combine(a)
+  override def combine[A](a: Iterable[A])(using combiner: Combiner[A]): A = a.foldLeft(combiner.unit)(combiner.combine(_, _))
 /*
  * 2) To apply DRY principle at the best,
  * note the three methods in Functions do something similar.
